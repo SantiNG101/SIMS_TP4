@@ -1,6 +1,7 @@
-import java.util.List;
 
 public interface Integrator {
-    void step(List<Particle> particles, ForceCalculator forceCalculator, double dt);
+    void step(Particle[] particles, double dt, ForceCalculator fc);
+    String name();
 }
+
 

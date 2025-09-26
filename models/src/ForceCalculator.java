@@ -1,6 +1,5 @@
-import java.util.List;
 
-public abstract class ForceCalculator {
-    public abstract void computeForces(List<Particle> particles);
+public interface ForceCalculator {
+    void computeForces(Particle[] particles);
 }
 
