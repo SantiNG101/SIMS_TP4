@@ -35,7 +35,7 @@ public class Main {
     }
 
     static void runOscillator(String integratorName, double dt, double tf) throws IOException {
-        String out = "osc_out.csv";
+        String out = "osc_gear5.csv";
         String eout = "osc_energy.csv";
 
         Particle p = new Particle(0);
