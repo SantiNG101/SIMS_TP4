@@ -1,73 +1,48 @@
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import glob, os
+import os
+from utils import analytic_solution
 
-def analytic_solution(t, A, m, k, gamma):
-    w0 = np.sqrt(k/m)
-    beta = gamma/(2*m)
-    wd = np.sqrt(w0**2 - beta**2)
-    x = A * np.exp(-beta*t) * np.cos(wd*t)
-    return x
+def compute_ecm(integrators, dts):
+    ecm_dict = {integr: [] for integr in integrators}
 
-def compute_ecm(num, ana):
-    return np.mean((num - ana)**2)
+    out_folder = "outputs/oscillator"
+    sims_folder = out_folder + "/sim_results"
 
-if len(sys.argv) < 2:
-    print("Uso: python error_vs_dt_all.py '<pattern_general>'")
-    print("Ejemplo: python error_vs_dt_all.py 'osc_out_dt*.csv'")
-    sys.exit(1)
+    for integr in integrators:
+        for dt in dts:
+            fn = f"{integr}_{dt}_out.csv"
+            filename = os.path.join(sims_folder, fn)
+            data = np.genfromtxt(filename, delimiter=",", skip_header=1)  # saltamos la cabecera
+            t = data[:,0]  # columna time
+            x_num = data[:,2]  # columna x
+            x_ana, _ = analytic_solution(t, A=1.0, m=1.0, k=1.0, gamma=0.1)  # calculamos analítica
+            ecm = np.mean((x_num - x_ana)**2)  # error cuadrático medio
+            ecm_dict[integr].append(ecm)
+    return integrators, dts, ecm_dict
 
-pattern = sys.argv[1]
-files = sorted(glob.glob(pattern))
 
-m = 70.0; k = 1e4; gamma = 100.0; A = 1.0
+# Graficar ECM vs dt en escala log-log
+def plot(integrators, dts, ecm_dict):
+    dts_float = [float(dt) for dt in dts]
+    out_folder = "outputs/oscillator"
 
-# separo archivos por integrador
-groups = {"beeman": [], "gear5": [], "verlet": []}
-for fn in files:
-    low = fn.lower()
-    if "beeman" in low:
-        groups["beeman"].append(fn)
-    elif "gear5" in low:
-        groups["gear5"].append(fn)
-    elif "verlet" in low:
-        groups["verlet"].append(fn)
+    plt.figure(figsize=(6,5))
+    for integr in integrators:
+        plt.loglog(dts_float, ecm_dict[integr], marker='o', label=integr)
 
-plt.figure(figsize=(8,6))
+    plt.xlabel('Paso temporal dt')
+    plt.ylabel('Error cuadrático medio (ECM)')
+    plt.title('ECM vs dt para distintos integradores')
+    plt.grid(True, which="both", ls="--")
+    plt.legend()
+    plt.savefig(os.path.join(out_folder, "ecm_vs_dt.png"), dpi=200)
 
-for method, fns in groups.items():
-    dts, errors = [], []
-    for fn in sorted(fns):
-        base = os.path.basename(fn)
-        dt = None
-        if "dt" in base:
-            try:
-                dt_str = base.split("dt")[1].split("_")[0]
-                dt = float(dt_str.replace("e","E"))
-            except Exception:
-                dt = None
 
-        data = np.loadtxt(fn, delimiter=",", skiprows=1)
-        t = data[:,0]
-        x_num = data[:,2]
 
-        x_ana = analytic_solution(t, A, m, k, gamma)
-        ecm = compute_ecm(x_num, x_ana)
+if __name__ == "__main__":
+    integrators = ["gear5", "beeman", "verlet"]
+    dts = ["0.01", "0.001", "1.0E-4", "1.0E-5"]
 
-        if dt is not None:
-            dts.append(dt)
-            errors.append(ecm)
-
-    if dts:
-        plt.loglog(dts, errors, "o-", label=method.capitalize())
-
-plt.xlabel("dt")
-plt.ylabel("ECM (posición)")
-plt.title("Error cuadrático medio vs dt (comparación de integradores)")
-plt.grid(True, which="both")
-plt.legend()
-plt.tight_layout()
-plt.savefig("error_vs_dt_all.png", dpi=150)
-plt.show()
-
+    integrators, dts, ecm_dict = compute_ecm(integrators, dts)
+    plot(integrators, dts, ecm_dict)

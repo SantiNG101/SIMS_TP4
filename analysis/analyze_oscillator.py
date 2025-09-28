@@ -2,24 +2,17 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-
-def analytic_solution(t, A, m, k, gamma):
-    w0 = np.sqrt(k/m)
-    beta = gamma/(2*m)
-    wd = np.sqrt(w0**2 - beta**2)
-    x = A * np.exp(-beta*t) * np.cos(wd*t)
-    v = -A * np.exp(-beta*t) * (beta*np.cos(wd*t) + wd*np.sin(wd*t))
-    return x, v
+from utils import analytic_solution
 
 def compute_ecm(num, ana):
     return np.mean((num - ana)**2)
 
-def plot(integratorName):
+def plot(filename):
     out_folder = "outputs/oscillator"
     sims_folder = out_folder + "/sim_results"
 
-    fn = os.path.join(sims_folder, integratorName + "_out.csv")
-    out = os.path.join(out_folder, integratorName + "_oscillator.png")
+    fn = os.path.join(sims_folder, filename + "_out.csv")
+    out = os.path.join(out_folder, filename + "_oscillator.png")
 
     # parámetros del problema (de Main.java)
     m = 70.0
@@ -52,11 +45,14 @@ def plot(integratorName):
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(out, dpi=150)
-    plt.show()
 
 
 if __name__ == "__main__":
-    
-    integratorName = "verlet" # "verlet", "beeman", "gear5"
 
-    plot(integratorName)
+    integrators = ["verlet", "beeman"]   # "verlet", "beeman", "gear5"
+    dts = ["0.01", "0.001", "1.0E-4"]
+
+    for integrator in integrators:
+        for d in dts:
+            filename = integrator + "_" + d
+            plot(filename)

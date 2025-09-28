@@ -1,22 +1,27 @@
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Random;
 
 public class Main {
 
     // Parameters
     static String mode = "oscillator"; // "oscillator" or "gravity"
-    static String integratorName = "beeman"; // "verlet", "beeman", "gear5"
-    static double dt = 1e-4;
+    static String integrators[] = {"verlet", "beeman", "gear5"}; // "verlet", "beeman", "gear5"
+    static double dt[] = {1e-5};
     static double tf = 5.0;
 
     public static void main(String[] args) throws IOException {
-        if (mode.equalsIgnoreCase("oscillator")) {
-            runOscillator(integratorName, dt, tf);
-        } else if (mode.equalsIgnoreCase("gravity")) {
-            runGravity(integratorName, dt, tf);
-        } else {
-            throw new IllegalArgumentException("Unknown mode: " + mode);
+        for (String integrator : integrators) {
+            for (double deltaT : dt) {
+                if (mode.equalsIgnoreCase("oscillator")) {
+                    runOscillator(integrator, deltaT, tf);
+                } else if (mode.equalsIgnoreCase("gravity")) {
+                    runGravity(integrator, deltaT, tf);
+                } else {
+                    throw new IllegalArgumentException("Unknown mode: " + mode);
+                }
+            }
         }
     }
 
@@ -35,8 +40,9 @@ public class Main {
     static void runOscillator(String integratorName, double dt, double tf) throws IOException {
         String folder = "outputs/oscillator/sim_results/";
         new File(folder).mkdirs(); 
-        String out = folder + integratorName + "_out.csv";
-        String eout = folder + integratorName + "_energy.csv";
+
+        String out = Paths.get(folder, integratorName + "_" + dt + "_out.csv").toString();
+        String eout = Paths.get(folder, integratorName + "_" + dt + "_energy.csv").toString();
 
         Particle p = new Particle(0);
         p.m = 70.0;
