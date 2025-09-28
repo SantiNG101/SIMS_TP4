@@ -1,18 +1,16 @@
+import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
 public class Main {
+
+    // Parameters
+    static String mode = "oscillator"; // "oscillator" or "gravity"
+    static String integratorName = "beeman"; // "verlet", "beeman", "gear5"
+    static double dt = 1e-4;
+    static double tf = 5.0;
+
     public static void main(String[] args) throws IOException {
-        if (args.length < 2) {
-            System.out.println("Uso: java Main <oscillator|gravity> <verlet|beeman|gear5> [dt] [tf]");
-            return;
-        }
-        String mode = args[0];
-        String integratorName = args[1];
-
-        double dt = (args.length > 2) ? Double.parseDouble(args[2]) : 1e-4;
-        double tf = (args.length > 3) ? Double.parseDouble(args[3]) : (mode.equals("oscillator") ? 5.0 : 10.0);
-
         if (mode.equalsIgnoreCase("oscillator")) {
             runOscillator(integratorName, dt, tf);
         } else if (mode.equalsIgnoreCase("gravity")) {
@@ -35,8 +33,10 @@ public class Main {
     }
 
     static void runOscillator(String integratorName, double dt, double tf) throws IOException {
-        String out = "osc_gear5.csv";
-        String eout = "osc_energy.csv";
+        String folder = "outputs/oscillator/sim_results/";
+        new File(folder).mkdirs(); 
+        String out = folder + integratorName + "_out.csv";
+        String eout = folder + integratorName + "_energy.csv";
 
         Particle p = new Particle(0);
         p.m = 70.0;
@@ -72,8 +72,11 @@ public class Main {
 
     static void runGravity(String integratorName, double dt, double tf) throws IOException {
         int N = 500;
-        String out = "grav_out.csv";
-        String eout = "grav_energy.csv";
+
+        String folder = "outputs/gravity/sim_results/";
+        new File(folder).mkdirs(); 
+        String out = folder + integratorName+ "_out.csv";
+        String eout = folder + integratorName + "_energy.csv";
 
         Particle[] arr = new Particle[N];
         Random rnd = new Random(12345);

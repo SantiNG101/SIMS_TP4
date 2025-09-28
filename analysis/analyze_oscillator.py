@@ -14,41 +14,49 @@ def analytic_solution(t, A, m, k, gamma):
 def compute_ecm(num, ana):
     return np.mean((num - ana)**2)
 
-script_dir = os.path.dirname(__file__)
+def plot(integratorName):
+    out_folder = "outputs/oscillator"
+    sims_folder = out_folder + "/sim_results"
 
-# CSV de entrada: primer argumento o default
-fn = os.path.join(script_dir, '..', 'osc_gear5.csv')
-out = "oscillator_gear5.png"
+    fn = os.path.join(sims_folder, integratorName + "_out.csv")
+    out = os.path.join(out_folder, integratorName + "_oscillator.png")
 
-# parámetros del problema (de Main.java)
-m = 70.0
-k = 1e4
-gamma = 100.0
-A = 1.0
+    # parámetros del problema (de Main.java)
+    m = 70.0
+    k = 1e4
+    gamma = 100.0
+    A = 1.0
 
-# cargar datos numéricos
-data = np.loadtxt(fn, delimiter=",", skiprows=1)
-t = data[:,0]
-x_num = data[:,2]  # columna x
-v_num = data[:,5]  # columna vx
+    # cargar datos numéricos
+    data = np.loadtxt(fn, delimiter=",", skiprows=1)
+    t = data[:,0]
+    x_num = data[:,2]  # columna x
+    v_num = data[:,5]  # columna vx
 
-# solución analítica
-x_ana, v_ana = analytic_solution(t, A, m, k, gamma)
+    # solución analítica
+    x_ana, v_ana = analytic_solution(t, A, m, k, gamma)
 
-# calcular errores
-ecm_x = compute_ecm(x_num, x_ana)
-ecm_v = compute_ecm(v_num, v_ana)
-print(f"ECM posición = {ecm_x:.3e}")
-print(f"ECM velocidad = {ecm_v:.3e}")
+    # calcular errores
+    ecm_x = compute_ecm(x_num, x_ana)
+    ecm_v = compute_ecm(v_num, v_ana)
+    print(f"ECM posición = {ecm_x:.3e}")
+    print(f"ECM velocidad = {ecm_v:.3e}")
 
-# graficar
-plt.figure(figsize=(8,5))
-plt.plot(t, x_num, label="x numérico", alpha=0.7)
-plt.plot(t, x_ana, "--", label="x analítico")
-plt.xlabel("Tiempo")
-plt.ylabel("x(t)")
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.savefig(out, dpi=150)
-plt.show()
+    # graficar
+    plt.figure(figsize=(8,5))
+    plt.plot(t, x_num, label="x numérico", alpha=0.7)
+    plt.plot(t, x_ana, "--", label="x analítico")
+    plt.xlabel("Tiempo")
+    plt.ylabel("x(t)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(out, dpi=150)
+    plt.show()
+
+
+if __name__ == "__main__":
+    
+    integratorName = "verlet" # "verlet", "beeman", "gear5"
+
+    plot(integratorName)
