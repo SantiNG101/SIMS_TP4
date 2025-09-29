@@ -23,7 +23,7 @@ def compute_ecm(integrators, dts):
 
 
 # Graficar ECM vs dt en escala log-log
-def plot(integrators, dts, ecm_dict):
+def plot(integrators, dts, ecm_dict, fontsize):
     dts_float = [float(dt) for dt in dts]
     out_folder = "outputs/oscillator"
 
@@ -31,10 +31,12 @@ def plot(integrators, dts, ecm_dict):
     for integr in integrators:
         plt.loglog(dts_float, ecm_dict[integr], marker='o', label=integr)
 
-    plt.xlabel('Paso temporal dt')
-    plt.ylabel('Error cuadrático medio (ECM)')
+    plt.xlabel('dt (s)', fontsize=fontsize)
+    plt.ylabel('Error cuadrático medio (ECM)', fontsize=fontsize)
     plt.grid(True, which="both", ls="--")
-    plt.legend()
+    plt.legend(fontsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
     plt.savefig(os.path.join(out_folder, "ecm_vs_dt.png"), dpi=150)
 
 
@@ -42,6 +44,7 @@ def plot(integrators, dts, ecm_dict):
 if __name__ == "__main__":
     integrators = ["gear5", "beeman", "verlet"]
     dts = ["0.01", "0.001", "1.0E-4", "1.0E-5"]
+    fontsize = 14
 
     integrators, dts, ecm_dict = compute_ecm(integrators, dts)
-    plot(integrators, dts, ecm_dict)
+    plot(integrators, dts, ecm_dict, fontsize)
