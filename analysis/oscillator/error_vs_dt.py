@@ -16,7 +16,7 @@ def compute_ecm(integrators, dts):
             data = np.genfromtxt(filename, delimiter=",", skip_header=1)  # saltamos la cabecera
             t = data[:,0]  # columna time
             x_num = data[:,2]  # columna x
-            x_ana, _ = analytic_solution(t, A=1.0, m=1.0, k=1.0, gamma=0.1)  # calculamos analítica
+            x_ana, _ = analytic_solution(t)  # calculamos analítica
             ecm = np.mean((x_num - x_ana)**2)  # error cuadrático medio
             ecm_dict[integr].append(ecm)
     return integrators, dts, ecm_dict
@@ -27,16 +27,15 @@ def plot(integrators, dts, ecm_dict):
     dts_float = [float(dt) for dt in dts]
     out_folder = "outputs/oscillator"
 
-    plt.figure(figsize=(6,5))
+    plt.figure(figsize=(7,5))
     for integr in integrators:
         plt.loglog(dts_float, ecm_dict[integr], marker='o', label=integr)
 
     plt.xlabel('Paso temporal dt')
     plt.ylabel('Error cuadrático medio (ECM)')
-    plt.title('ECM vs dt para distintos integradores')
     plt.grid(True, which="both", ls="--")
     plt.legend()
-    plt.savefig(os.path.join(out_folder, "ecm_vs_dt.png"), dpi=200)
+    plt.savefig(os.path.join(out_folder, "ecm_vs_dt.png"), dpi=150)
 
 
 

@@ -8,7 +8,7 @@ public class Main {
     // Parameters
     static String mode = "oscillator"; // "oscillator" or "gravity"
     static String integrators[] = {"verlet", "beeman", "gear5"}; // "verlet", "beeman", "gear5"
-    static double dt[] = {1e-5};
+    static double dt[] = {0.1, 0.01, 0.001, 1e-4, 1e-5};
     static double tf = 5.0;
 
     public static void main(String[] args) throws IOException {

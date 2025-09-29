@@ -4,11 +4,6 @@ import matplotlib.pyplot as plt
 from utils import analytic_solution
 
 def plot(dt):
-    # parámetros del oscilador
-    m = 70.0
-    k = 1e4
-    gamma = 100.0
-    A = 1.0
 
     out_folder = "outputs/oscillator"
     sims_folder = out_folder + "/sim_results"
@@ -37,7 +32,7 @@ def plot(dt):
 
     # curva analítica en el mismo rango
     t_ref = np.linspace(t_min, t_max, 500)
-    x_ana_curve, v = analytic_solution(t_ref, A, m, k, gamma)
+    x_ana_curve, v = analytic_solution(t_ref)
 
     # graficar
     plt.figure(figsize=(8,5))

@@ -14,12 +14,6 @@ def plot(filename):
     fn = os.path.join(sims_folder, filename + "_out.csv")
     out = os.path.join(out_folder, filename + "_oscillator.png")
 
-    # parámetros del problema (de Main.java)
-    m = 70.0
-    k = 1e4
-    gamma = 100.0
-    A = 1.0
-
     # cargar datos numéricos
     data = np.loadtxt(fn, delimiter=",", skiprows=1)
     t = data[:,0]
@@ -27,11 +21,12 @@ def plot(filename):
     v_num = data[:,5]  # columna vx
 
     # solución analítica
-    x_ana, v_ana = analytic_solution(t, A, m, k, gamma)
+    x_ana, v_ana = analytic_solution(t)
 
     # calcular errores
     ecm_x = compute_ecm(x_num, x_ana)
     ecm_v = compute_ecm(v_num, v_ana)
+    print(f"Archivo: {filename}")
     print(f"ECM posición = {ecm_x:.3e}")
     print(f"ECM velocidad = {ecm_v:.3e}")
 
@@ -49,8 +44,8 @@ def plot(filename):
 
 if __name__ == "__main__":
 
-    integrators = ["verlet", "beeman"]   # "verlet", "beeman", "gear5"
-    dts = ["0.01", "0.001", "1.0E-4"]
+    integrators = ["verlet", "beeman", "gear5"]   # "verlet", "beeman", "gear5"
+    dts = ["0.01", "0.01", "0.001", "1.0E-4", "1.0E-5"]
 
     for integrator in integrators:
         for d in dts:
