@@ -3,12 +3,13 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Random;
 
+
 public class Main {
 
     // Parameters
     static String mode = "oscillator"; // "oscillator" or "gravity"
     static String integrators[] = {"verlet", "beeman", "gear5"}; // "verlet", "beeman", "gear5"
-    static double dt[] = {0.1, 0.01, 0.001, 1e-4, 1e-5};
+    static double dt[] = {0.1, 0.01, 0.001, 1e-4, 1e-5, 1e-6};
     static double tf = 5.0;
 
     public static void main(String[] args) throws IOException {
@@ -39,7 +40,7 @@ public class Main {
 
     static void runOscillator(String integratorName, double dt, double tf) throws IOException {
         String folder = "outputs/oscillator/sim_results/";
-        new File(folder).mkdirs(); 
+        new File(folder).mkdirs();
 
         String out = Paths.get(folder, integratorName + "_" + dt + "_out.csv").toString();
         String eout = Paths.get(folder, integratorName + "_" + dt + "_energy.csv").toString();
@@ -56,6 +57,15 @@ public class Main {
         Particle[] arr = new Particle[]{p};
         ForceCalculator fc = new OscillatorForce(k, gamma, p);
         Integrator integrator = buildIntegrator(integratorName);
+
+        // 👉 Inicialización de derivadas solo si es Gear5
+        if (integrator instanceof Gear5Integrator) {
+            // primero calculo aceleración inicial con la fuerza
+            fc.computeForces(arr);
+            p.a.set(p.a); // redundante, pero deja claro que ya está calculada
+            // ahora inicializo r2..r5
+            Gear5Integrator.initializeOscillatorDerivatives(p, k, gamma);
+        }
 
         StateWriter sw = new StateWriter(out);
         EnergyWriter ew = new EnergyWriter(eout, "E_kin,E_pot,E_tot");
@@ -75,6 +85,7 @@ public class Main {
         ew.close();
         System.out.println("Finished oscillator with " + integrator.name() + " -> " + out + ", " + eout);
     }
+
 
     static void runGravity(String integratorName, double dt, double tf) throws IOException {
         int N = 500;

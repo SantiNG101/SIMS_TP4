@@ -6,7 +6,7 @@ from utils import analytic_solution
 def compute_ecm(integrators, dts):
     ecm_dict = {integr: [] for integr in integrators}
 
-    out_folder = "outputs/oscillator"
+    out_folder = "../../outputs/oscillator"
     sims_folder = out_folder + "/sim_results"
 
     for integr in integrators:
@@ -43,7 +43,7 @@ def plot(integrators, dts, ecm_dict, fontsize):
 
 if __name__ == "__main__":
     integrators = ["gear5", "beeman", "verlet"]
-    dts = ["0.01", "0.001", "1.0E-4", "1.0E-5"]
+    dts = ["0.1", "0.01", "0.001", "1.0E-4", "1.0E-5", "1.0E-6"]
     fontsize = 14
 
     integrators, dts, ecm_dict = compute_ecm(integrators, dts)
