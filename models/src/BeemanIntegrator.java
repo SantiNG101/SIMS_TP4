@@ -1,3 +1,6 @@
+
+
+
 public class BeemanIntegrator implements Integrator {
     @Override
     public void step(Particle[] p, double dt, ForceCalculator fc) {
