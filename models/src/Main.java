@@ -7,17 +7,18 @@ public class Main {
 
     // Parameters
     static String mode = "oscillator"; // "oscillator" or "gravity"
-    static String integrators[] = {"verlet", "beeman", "gear5"}; // "verlet", "beeman", "gear5"
-    static double dt[] = {0.1, 0.01, 0.001, 1e-4, 1e-5};
+    static String integrators[] = {"gear5"}; // "verlet", "beeman", "gear5"
+    static double dt[] = {0.1, 0.01, 0.001, 1e-4, 1e-5, 1e-6, 1e-7};
     static double tf = 5.0;
+    static double dt2 = 0.01; // for writing output only
 
     public static void main(String[] args) throws IOException {
         for (String integrator : integrators) {
             for (double deltaT : dt) {
                 if (mode.equalsIgnoreCase("oscillator")) {
-                    runOscillator(integrator, deltaT, tf);
+                    runOscillator(integrator, deltaT, dt2, tf);
                 } else if (mode.equalsIgnoreCase("gravity")) {
-                    runGravity(integrator, deltaT, tf);
+                    runGravity(integrator, deltaT, dt2, tf);
                 } else {
                     throw new IllegalArgumentException("Unknown mode: " + mode);
                 }
@@ -37,7 +38,7 @@ public class Main {
         }
     }
 
-    static void runOscillator(String integratorName, double dt, double tf) throws IOException {
+    static void runOscillator(String integratorName, double dt, double dt2, double tf) throws IOException {
         String folder = "outputs/oscillator/sim_results/";
         new File(folder).mkdirs(); 
 
@@ -61,12 +62,16 @@ public class Main {
         EnergyWriter ew = new EnergyWriter(eout, "E_kin,E_pot,E_tot");
 
         double t = 0.0;
-        while (t <= tf + 1e-12) {
-            sw.write(t, arr);
-            double ek = Energy.kinetic(arr);
-            double ep = Energy.potentialOscillator(p, k);
-            ew.write(t, ek, ep, ek + ep);
+        double t_write = 0.0;
 
+        while (t <= tf + 1e-12) {
+            if (t - t_write >= dt2 - 1e-12) {
+                sw.write(t, arr);
+                double ek = Energy.kinetic(arr);
+                double ep = Energy.potentialOscillator(p, k);
+                ew.write(t, ek, ep, ek + ep);
+                t_write = t;
+            }
             integrator.step(arr, dt, fc);
             t += dt;
         }
@@ -76,7 +81,7 @@ public class Main {
         System.out.println("Finished oscillator with " + integrator.name() + " -> " + out + ", " + eout);
     }
 
-    static void runGravity(String integratorName, double dt, double tf) throws IOException {
+    static void runGravity(String integratorName, double dt, double dt2, double tf) throws IOException {
         int N = 500;
 
         String folder = "outputs/gravity/sim_results/";
@@ -107,12 +112,16 @@ public class Main {
         EnergyWriter ew = new EnergyWriter(eout, "E_kin,E_pot,E_tot");
 
         double t = 0.0;
-        while (t <= tf + 1e-12) {
-            sw.write(t, arr);
-            double ek = Energy.kinetic(arr);
-            double ep = Energy.potentialGravity(arr, G, h);
-            ew.write(t, ek, ep, ek + ep);
+        double t_write = 0.0;
 
+        while (t <= tf + 1e-12) {
+            if(t - t_write >= dt2 - 1e-12) {
+                sw.write(t, arr);
+                double ek = Energy.kinetic(arr);
+                double ep = Energy.potentialGravity(arr, G, h);
+                ew.write(t, ek, ep, ek + ep);
+                t_write = t;
+            }
             integrator.step(arr, dt, fc);
             t += dt;
         }
