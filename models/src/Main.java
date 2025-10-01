@@ -2,6 +2,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Random;
+import java.util.Timer;
 
 
 public class Main {
@@ -9,8 +10,8 @@ public class Main {
     // Parameters
     static String mode = "gravity"; // "oscillator" or "gravity"
     static String integrators[] = {"verlet"}; // "verlet", "beeman", "gear5"
-    static double dt[] = {0.1, 0.01, 0.001, 1e-4};
-    static double tf = 5.0;
+    static double dt[] = {0.01};
+    static double tf = 3.0;
     static double dt2 = 0.01; // for writing output only
 
     public static void main(String[] args) throws IOException {
@@ -94,7 +95,7 @@ public class Main {
     static void runGravity(String integratorName, double dt, double tf) throws IOException {
         int N = 200;
 
-        String folder = "outputs/gravity/sim_results/";
+        String folder = "outputs/gravity/sim_results/"+integratorName+"/";
         new File(folder).mkdirs();
         String out = folder + "out.csv";
         String eout = folder + "energy_dt"+ String.format("%.0e",dt) +".csv";
@@ -123,6 +124,8 @@ public class Main {
 
         double t = 0.0;
         tf += 1e-12;
+        long startTime = System.currentTimeMillis();
+
         while (t <= tf) {
             // sw.write(t, arr); // para graficar estado de las particulas
             double ek = Energy.kinetic(arr);
@@ -133,9 +136,11 @@ public class Main {
             t += dt;
         }
 
+        long endTime = System.currentTimeMillis();
         sw.close();
         ew.close();
         System.out.println("Finished gravity with " + integrator.name() + " -> " + out + ", " + eout);
+        System.out.println("Execution time: " + (endTime - startTime));
     }
 }
 

@@ -4,7 +4,7 @@ import os
 import re
 
 out_folder = "../../outputs/gravity"
-sims_folder = out_folder + "/sim_results"
+sims_main_folder = out_folder + "/sim_results/"
 
 def load_energy_data(filename):
     data = np.loadtxt(filename, delimiter=",", skiprows=1)
@@ -33,9 +33,10 @@ def compute_energy_error(E_tot):
     E0 = E_tot[0]
     return np.max(np.abs((E_tot - E0) / np.abs(E0)))
 
-def analyze_all_sims(threshold=1e-3):
+def analyze_all_sims(threshold=1e-3, integrator="verlet"):
     results = []
     dt_pattern = re.compile(r"energy_dt([0-9.eE+-]+)\.csv")
+    sims_folder = sims_main_folder + integrator
 
     for fname in os.listdir(sims_folder):
         match = dt_pattern.match(fname)
@@ -73,14 +74,15 @@ def analyze_all_sims(threshold=1e-3):
 
 if __name__ == "__main__":
     threshold = 1e-3  # lo podés cambiar desde acá
+    integrator = "verlet"
 
-    results, best = analyze_all_sims(threshold)
+    results, best = analyze_all_sims(threshold, integrator)
 
     print("Resultados de conservación:")
     for dt, error, *_ in results:
         print(f" dt = {dt:.0e}, error = {error:.3e}")
 
     if best:
-        print(f"\n>> Mejor dt según umbral {threshold}: dt = {best[0]:.0e}, error = {best[1]:.3e}")
+        print(f"\n>> Mejor dt según umbral {threshold} usando el integrador {integrator}: dt = {best[0]:.0e}, error = {best[1]:.3e}")
     else:
-        print(f"\n>> Ningún dt cumple con el umbral {threshold}")
+        print(f"\n>> Ningún dt cumple con el umbral {threshold} usando el integrador {integrator}")
