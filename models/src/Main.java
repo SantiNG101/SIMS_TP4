@@ -122,16 +122,19 @@ public class Main {
         StateWriter sw = new StateWriter(out);
         EnergyWriter ew = new EnergyWriter(eout, "E_kin,E_pot,E_tot");
 
-        double t = 0.0;
+        double t = 0.0, t_write = 0.0;
         tf += 1e-12;
+        dt2 -= 1e-12;
         long startTime = System.currentTimeMillis();
 
         while (t <= tf) {
-            // sw.write(t, arr); // para graficar estado de las particulas
-            double ek = Energy.kinetic(arr);
-            double ep = Energy.potentialGravity(arr, G, h);
-            ew.write(t, ek, ep, ek + ep);
-
+            if(t - t_write >= dt2) {
+                sw.write(t, arr);
+                double ek = Energy.kinetic(arr);
+                double ep = Energy.potentialGravity(arr, G, h);
+                ew.write(t, ek, ep, ek + ep);
+                t_write = t;
+            }
             integrator.step(arr, dt, fc);
             t += dt;
         }
