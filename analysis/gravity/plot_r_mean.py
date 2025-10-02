@@ -30,26 +30,47 @@ def compute_average_rhm(file_list, t_transient):
     if len(file_list) == 0:
         raise ValueError("No hay simulaciones en la lista")
 
-    times0, rhm0 = compute_rhm_from_file(file_list[0])
-    all_rhms = [rhm0]
+    all_rhms = []
+    slopes_indiv = []
 
-    for f in file_list[1:]:
-        times_i, rhm_i = compute_rhm_from_file(f)
-        if not np.allclose(times_i, times0):
-            raise ValueError("Los tiempos no coinciden entre simulaciones")
-        all_rhms.append(rhm_i)
+    for f in file_list:
+        times, rhm = compute_rhm_from_file(f)
+
+        mask_stat = times >= t_transient
+        times_stat = times[mask_stat]
+        rhm_stat = rhm[mask_stat]
+
+        all_rhms.append(rhm)
+
+        # pendiente individual de esta sim
+        slope, intercept = np.polyfit(times_stat, rhm_stat, 1)
+        slopes_indiv.append(slope)
 
     arr = np.vstack(all_rhms)  # (n_sims, n_times)
-    mean_rhm_full = np.mean(arr, axis=0)
-    std_rhm_full = np.std(arr, axis=0)
+    mean_full = np.mean(arr, axis=0)
+    std_full = np.std(arr, axis=0)
 
-    # recorto a la parte estacionaria
-    mask_stat = times0 >= t_transient
-    times_stat = times0[mask_stat]
-    mean_rhm_stat = mean_rhm_full[mask_stat]
-    std_rhm_stat = std_rhm_full[mask_stat]
+    mask_stat = times >= t_transient
+    mean_stat = mean_full[mask_stat]
+    std_stat = std_full[mask_stat]
+    times_stat = times[mask_stat]
 
-    return times0, mean_rhm_full, std_rhm_full, times_stat, mean_rhm_stat, std_rhm_stat
+    # pendiente sobre el promedio
+    slope_mean, intercept_mean = np.polyfit(times_stat, mean_stat, 1)
+        # si quiero que tome la ultima parte del estacionario: slope_from_tail(times_stat,mean_stat,frac_tail_for_slope)
+    slope_std = np.std(slopes_indiv)
+
+    return (
+        times,
+        mean_full, 
+        std_full,
+        times_stat,
+        mean_stat,
+        std_stat,
+        slope_mean,
+        slope_std,
+        intercept_mean
+    )
 
 def slope_from_tail(times_tail, rhm_tail, frac_tail):
     n = len(times_tail)
@@ -60,7 +81,8 @@ def slope_from_tail(times_tail, rhm_tail, frac_tail):
     return p[0], p[1]  # slope, intercept
 
 def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
-    slopes = []
+    slopes_values = []
+    slopes_std_values = []
     Ns_ok = []
     
     # PRIMERA PASADA: calcular el máximo valor de r_hm para establecer escala común
@@ -75,7 +97,7 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
         if len(file_list) == 0:
             continue
 
-        times, mean_full, std_full, times_stat, mean_stat, std_stat = compute_average_rhm(
+        times, mean_full, std_full, times_stat, mean_stat, std_stat, slope_mean, slope_std, intercept_mean = compute_average_rhm(
             file_list, t_transient=t_transient
         )
         
@@ -88,6 +110,9 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
             'times_stat': times_stat,
             'mean_stat': mean_stat,
             'std_stat': std_stat,
+            "slope_mean": slope_mean,
+            "slope_std": slope_std,
+            "intercept_mean": intercept_mean,
             'file_list': file_list
         })
         
@@ -107,9 +132,14 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
         std_full = data['std_full']
         times_stat = data['times_stat']
         mean_stat = data['mean_stat']
-        
-        slope, intercept = slope_from_tail(times_stat, mean_stat, frac_tail=frac_tail_for_slope)
-        slopes.append(slope)
+        slope_mean = data['slope_mean']
+        slope_std = data['slope_std']
+        intercept_mean = data['intercept_mean']
+
+        slope = slope_mean
+        slopes_values.append(slope_mean)
+        slopes_std_values.append(slope_std)
+        print(slopes_std_values)
         Ns_ok.append(N)
 
         # plot promedio y ajuste con escala común
@@ -118,7 +148,7 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
         plt.fill_between(times, mean_full-std_full, mean_full+std_full, alpha=0.25)
         plt.axvline(t_transient, color='gray', linestyle='--', label="t_transient")
         t_line = np.array([times_stat[0], times_stat[-1]])
-        plt.plot(t_line, intercept + slope*t_line, 'r--', label=f"slope={slope:.2e}")
+        plt.plot(t_line, intercept_mean + slope*t_line, 'r--', label=f"slope={slope:.2e}")
         
         # Establecer escala común en Y
         plt.ylim(0, y_max)
@@ -133,20 +163,20 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
     # pendiente vs N
     if Ns_ok:
         plt.figure(figsize=(6,4))
-        plt.plot(Ns_ok, slopes, "o-")
+        plt.errorbar(Ns_ok, slopes_values, yerr= slopes_std_values, fmt='o-', capsize=5)
         plt.xlabel("N")
         plt.ylabel("Pendiente de <r_hm> en estado estacionario")
         plt.grid(True)
         plt.savefig(out_folder + f"/{integrator}/slope_vs_N_dt{dt:.0e}.png", dpi=150)
         plt.show()
 
-    return Ns_ok, slopes
+    return Ns_ok, slopes_values
 
 # ---------------- Uso ----------------
 if __name__ == "__main__":
-    N_values = [100, 200, 500, 1000, 2000]
+    N_values = [100, 200, 500, 1000, 1500, 2000]
     dt = 1e-3
-    t_transient = 0.35
+    t_transient = 0.4
     frac_tail_for_slope = t_transient #0.5
 
     Ns, slopes = analyze_all_N(N_values, dt=dt, t_transient=t_transient, frac_tail_for_slope=frac_tail_for_slope)

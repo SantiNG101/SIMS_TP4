@@ -14,7 +14,7 @@ public class Main {
     static double dt[] = {0.001};
     static double tf = 1.0;
     static double dt2 = 0.01; // for writing output only
-    static int N[] = {500,1000,2000};
+    static int N[] = {100};
     static int runs = 5;
     public static void main(String[] args) throws IOException {
         for (int i = 0; i < runs; i++) {
