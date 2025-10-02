@@ -15,13 +15,27 @@ public class Energy {
 
     public static double potentialGravity(Particle[] particles, double G, double h){
         double ep=0.0;
+        final double h2 = h*h;
         int n = particles.length;
+
         for (int i=0;i<n;i++){
             for (int j=i+1;j<n;j++){
-                double dist = Math.sqrt(particles[i].r.sub(particles[j].r).norm() + h*h);
+                double dist = Math.sqrt(particles[i].r.sub(particles[j].r).norm() + h2 );
                 ep += -G * particles[i].m * particles[j].m / dist;
             }
         }
         return ep;
+
+        // return IntStream.range(0, n)
+        //                .parallel() // paralelo en el índice i
+        //                .mapToDouble(i -> {
+        //                    double localEp = 0.0;
+        //                    for (int j = i + 1; j < n; j++) {
+        //                        double dist = Math.sqrt(particles[i].r.sub(particles[j].r).norm() + h2);
+        //                        localEp += -G * particles[i].m * particles[j].m / dist;
+        //                    }
+        //                    return localEp;
+        //                })
+        //                .sum(); // combina todo
     }
 }

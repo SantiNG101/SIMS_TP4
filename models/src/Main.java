@@ -2,15 +2,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Random;
+import java.util.Timer;
 
 
 public class Main {
 
     // Parameters
-    static String mode = "oscillator"; // "oscillator" or "gravity"
-    static String integrators[] = {"verlet", "beeman", "gear5"}; // "verlet", "beeman", "gear5"
-    static double dt[] = {0.1, 0.01, 0.001, 1e-4, 1e-5, 1e-6};
-    static double tf = 5.0;
+    static String mode = "gravity"; // "oscillator" or "gravity"
+    static String integrators[] = {"verlet"}; // "verlet", "beeman", "gear5"
+    static double dt[] = {0.01};
+    static double tf = 3.0;
     static double dt2 = 0.01; // for writing output only
 
     public static void main(String[] args) throws IOException {
@@ -19,7 +20,7 @@ public class Main {
                 if (mode.equalsIgnoreCase("oscillator")) {
                     runOscillator(integrator, deltaT, dt2, tf);
                 } else if (mode.equalsIgnoreCase("gravity")) {
-                    runGravity(integrator, deltaT, dt2, tf);
+                    runGravity(integrator, deltaT, tf);
                 } else {
                     throw new IllegalArgumentException("Unknown mode: " + mode);
                 }
@@ -91,16 +92,16 @@ public class Main {
         System.out.println("Finished oscillator with " + integrator.name() + " -> " + out + ", " + eout);
     }
 
-    static void runGravity(String integratorName, double dt, double dt2, double tf) throws IOException {
-        int N = 500;
+    static void runGravity(String integratorName, double dt, double tf) throws IOException {
+        int N = 200;
 
-        String folder = "outputs/gravity/sim_results/";
-        new File(folder).mkdirs(); 
-        String out = folder + integratorName+ "_out.csv";
-        String eout = folder + integratorName + "_energy.csv";
+        String folder = "outputs/gravity/sim_results/"+integratorName+"/";
+        new File(folder).mkdirs();
+        String out = folder + "out.csv";
+        String eout = folder + "energy_dt"+ String.format("%.0e",dt) +".csv";
 
         Particle[] arr = new Particle[N];
-        Random rnd = new Random(12345);
+        Random rnd = new Random(1);
         for (int i = 0; i < N; i++) {
             arr[i] = new Particle(i);
             arr[i].m = 1.0;
@@ -114,18 +115,20 @@ public class Main {
             );
         }
 
-        double G = 1.0, h = 0.05;
+        final double G = 1.0, h = 0.05;
         ForceCalculator fc = new GravityForce(G, h);
         Integrator integrator = buildIntegrator(integratorName);
 
         StateWriter sw = new StateWriter(out);
         EnergyWriter ew = new EnergyWriter(eout, "E_kin,E_pot,E_tot");
 
-        double t = 0.0;
-        double t_write = 0.0;
+        double t = 0.0, t_write = 0.0;
+        tf += 1e-12;
+        dt2 -= 1e-12;
+        long startTime = System.currentTimeMillis();
 
-        while (t <= tf + 1e-12) {
-            if(t - t_write >= dt2 - 1e-12) {
+        while (t <= tf) {
+            if(t - t_write >= dt2) {
                 sw.write(t, arr);
                 double ek = Energy.kinetic(arr);
                 double ep = Energy.potentialGravity(arr, G, h);
@@ -136,9 +139,11 @@ public class Main {
             t += dt;
         }
 
+        long endTime = System.currentTimeMillis();
         sw.close();
         ew.close();
         System.out.println("Finished gravity with " + integrator.name() + " -> " + out + ", " + eout);
+        System.out.println("Execution time: " + (endTime - startTime));
     }
 }
 
