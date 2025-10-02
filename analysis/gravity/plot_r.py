@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import glob
 
 out_folder = "../../outputs/gravity"
 sims_folder = out_folder + "/sim_results"
@@ -49,10 +50,17 @@ def plot_r(filename):
 
 
 if __name__ == "__main__":
-    dt = 1e-2
-    N = 500
+    dt = 1e-3
+    N = 200
     integrator = "verlet"
 
-    filename = os.path.join(sims_folder, f"{integrator}/out_dt{dt:.0e}N{N}.csv")
-    print(f"Filename: {filename}")
-    plot_r(filename) 
+        
+    file_list = glob.glob(os.path.join(sims_folder, integrator, f"dt{dt:.0e}N{N}/out", "*.csv"))
+    if file_list:
+        filename = max(file_list, key=os.path.getmtime)  # Archivo más reciente))
+        print(f"Filename: {filename}")
+        plot_r(filename) 
+    else:
+        print("Error: No se encontro el archivo")
+    
+    

@@ -32,16 +32,17 @@ def plot_energies(time, E_kin, E_pot, E_tot, dt):
     plt.grid(True, linestyle=":")
 
 
-    plt.savefig(out_folder+f"/{integrator}/energies_dt{dt:.0e}.png", dpi=150, bbox_inches="tight")
+    plt.savefig(out_folder+f"/{integrator}/energies_dt{dt:.0e}N{N}.png", dpi=150, bbox_inches="tight")
     plt.show()
 
 
 if __name__ == "__main__":
     
-    dt = 1e-2
+    dt = 1e-3
+    N= 200
     integrator = "verlet"
 
-    filename = os.path.join(sims_folder, f"{integrator}/energy_dt{dt:.0e}.csv")
+    filename = os.path.join(sims_folder, f"{integrator}/energy/energy_dt{dt:.0e}N{N}.csv")
     print(f"Filename: {filename}")
 
     time, E_kin, E_pot, E_tot = load_energy_data(filename)

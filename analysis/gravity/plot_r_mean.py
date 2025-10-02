@@ -26,7 +26,7 @@ def compute_rhm_from_file(filename):
         rhm_values.append(rhm)
     return np.array(times), np.array(rhm_values)
 
-def compute_average_rhm(file_list, t_transient=0.3):
+def compute_average_rhm(file_list, t_transient):
     if len(file_list) == 0:
         raise ValueError("No hay simulaciones en la lista")
 
@@ -51,7 +51,7 @@ def compute_average_rhm(file_list, t_transient=0.3):
 
     return times0, mean_rhm_full, std_rhm_full, times_stat, mean_rhm_stat, std_rhm_stat
 
-def slope_from_tail(times_tail, rhm_tail, frac_tail=0.5):
+def slope_from_tail(times_tail, rhm_tail, frac_tail):
     n = len(times_tail)
     start_idx = int(n * (1 - frac_tail))
     t_fit = times_tail[start_idx:]
@@ -59,9 +59,14 @@ def slope_from_tail(times_tail, rhm_tail, frac_tail=0.5):
     p = np.polyfit(t_fit, y_fit, 1)
     return p[0], p[1]  # slope, intercept
 
-def analyze_all_N(N_values, dt=1e-2, t_transient=0.3, frac_tail_for_slope=0.5):
+def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
     slopes = []
     Ns_ok = []
+    
+    # PRIMERA PASADA: calcular el máximo valor de r_hm para establecer escala común
+    max_rhm = 0
+    all_data = []  # para almacenar datos temporales
+    
     for N in N_values:
         folder = os.path.join(sims_folder, integrator, f"dt{dt:.0e}N{N}/out")
         file_list = sorted(glob.glob(os.path.join(folder, "*.csv")))
@@ -73,18 +78,51 @@ def analyze_all_N(N_values, dt=1e-2, t_transient=0.3, frac_tail_for_slope=0.5):
         times, mean_full, std_full, times_stat, mean_stat, std_stat = compute_average_rhm(
             file_list, t_transient=t_transient
         )
+        
+        # Guardar datos para segunda pasada
+        all_data.append({
+            'N': N,
+            'times': times,
+            'mean_full': mean_full,
+            'std_full': std_full,
+            'times_stat': times_stat,
+            'mean_stat': mean_stat,
+            'std_stat': std_stat,
+            'file_list': file_list
+        })
+        
+        # Actualizar máximo valor de r_hm
+        current_max = np.max(mean_full + std_full)
+        if current_max > max_rhm:
+            max_rhm = current_max
+    
+    # Añadir un margen del 10% para mejor visualización
+    y_max = max_rhm * 1.1
+    
+    # SEGUNDA PASADA: generar gráficos con escala común
+    for data in all_data:
+        N = data['N']
+        times = data['times']
+        mean_full = data['mean_full']
+        std_full = data['std_full']
+        times_stat = data['times_stat']
+        mean_stat = data['mean_stat']
+        
         slope, intercept = slope_from_tail(times_stat, mean_stat, frac_tail=frac_tail_for_slope)
-
         slopes.append(slope)
         Ns_ok.append(N)
 
-        # plot promedio y ajuste
+        # plot promedio y ajuste con escala común
         plt.figure(figsize=(7,4))
         plt.plot(times, mean_full, label=f"<r_hm>(N={N})")
         plt.fill_between(times, mean_full-std_full, mean_full+std_full, alpha=0.25)
         plt.axvline(t_transient, color='gray', linestyle='--', label="t_transient")
         t_line = np.array([times_stat[0], times_stat[-1]])
         plt.plot(t_line, intercept + slope*t_line, 'r--', label=f"slope={slope:.2e}")
+        
+        # Establecer escala común en Y
+        plt.ylim(0, y_max)
+        
         plt.xlabel("dt (s)")
         plt.ylabel("<r_hm> (m)")
         plt.legend()
@@ -106,7 +144,7 @@ def analyze_all_N(N_values, dt=1e-2, t_transient=0.3, frac_tail_for_slope=0.5):
 
 # ---------------- Uso ----------------
 if __name__ == "__main__":
-    N_values = [100, 200, 500, 1000, 2000]
+    N_values = [200, 500, 1000, 2000]
     dt = 1e-2
     t_transient = 0.35
     frac_tail_for_slope = t_transient #0.5
@@ -115,4 +153,3 @@ if __name__ == "__main__":
     print("Pendientes calculadas:")
     for n, s in zip(Ns, slopes):
         print(f" N={n}: slope={s:.3e}")
-

@@ -21,7 +21,7 @@ public class Energy {
         for (int i=0;i<n;i++){
             for (int j=i+1;j<n;j++){
                 double dist = Math.sqrt(particles[i].r.sub(particles[j].r).norm() + h2 );
-                ep += -G * particles[i].m * particles[j].m / dist;
+                ep += G * particles[i].m * particles[j].m / dist;
             }
         }
         return ep;
