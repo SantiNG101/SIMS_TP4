@@ -135,7 +135,7 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
         plt.figure(figsize=(6,4))
         plt.plot(Ns_ok, slopes, "o-")
         plt.xlabel("N")
-        plt.ylabel("Pendiente en estado estacionario")
+        plt.ylabel("Pendiente de <r_hm> en estado estacionario")
         plt.grid(True)
         plt.savefig(out_folder + f"/{integrator}/slope_vs_N_dt{dt:.0e}.png", dpi=150)
         plt.show()
@@ -144,8 +144,8 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
 
 # ---------------- Uso ----------------
 if __name__ == "__main__":
-    N_values = [200, 500, 1000, 2000]
-    dt = 1e-2
+    N_values = [100, 200, 500, 1000, 2000]
+    dt = 1e-3
     t_transient = 0.35
     frac_tail_for_slope = t_transient #0.5
 
