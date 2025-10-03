@@ -26,7 +26,7 @@ def plot_energies(time, E_kin, E_pot, E_tot, dt):
     plt.legend()
     plt.grid(True, linestyle=":")
 
-    plt.savefig(out_folder + f"/energies_dt{dt:.0e}.png", dpi=150, bbox_inches="tight")
+    plt.savefig(out_folder + f"/{integrator}/energies_dt{dt:.0e}.png", dpi=150, bbox_inches="tight")
     plt.close()
 
 def compute_energy_error(E_tot):
@@ -35,9 +35,8 @@ def compute_energy_error(E_tot):
 
 def analyze_all_sims(threshold=1e-3, integrator="verlet"):
     results = []
-    dt_pattern = re.compile(r"energy_dt([0-9.eE+-]+)\.csv")
-    sims_folder = sims_main_folder + integrator
-
+    dt_pattern = re.compile(r"energy_dt([0-9.eE+-]+)N([0-9]+)\.csv")
+    sims_folder = sims_main_folder + integrator + "/energy"
     for fname in os.listdir(sims_folder):
         match = dt_pattern.match(fname)
         if match:
@@ -67,13 +66,13 @@ def analyze_all_sims(threshold=1e-3, integrator="verlet"):
     plt.title("Error relativo de energía según dt")
     plt.legend()
     plt.grid(True, which="both", linestyle=":")
-    plt.savefig(out_folder + "/energy_conservation_vs_dt.png", dpi=150, bbox_inches="tight")
+    plt.savefig(out_folder + f"/{integrator}/energy_conservation_vs_dt.png", dpi=150, bbox_inches="tight")
     plt.close()
 
     return results, best
 
 if __name__ == "__main__":
-    threshold = 1e-3  # lo podés cambiar desde acá
+    threshold = 1e-2  # lo podés cambiar desde acá
     integrator = "verlet"
 
     results, best = analyze_all_sims(threshold, integrator)
