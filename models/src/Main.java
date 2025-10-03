@@ -2,17 +2,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Random;
-import java.util.Timer;
-
 
 public class Main {
 
     // Parameters
-    static String mode = "gravity"; // "oscillator" or "gravity"
-    static String integrators[] = {"verlet"}; // "verlet", "beeman", "gear5"
-    static double dt[] = {0.01};
-    static double tf = 3.0;
-    static double dt2 = 0.01; // for writing output only
+    static String mode = "oscillator"; // "oscillator" or "gravity"
+    static String integrators[] = {"verlet", "beeman", "gear5"}; // "verlet", "beeman", "gear5"
+    static double dt[] = {0.1, 0.01, 0.001, 1E-04, 1E-05, 1E-06, 1E-07};
+    static double tf = 5.0;
+    static double dt2 = 0.0001; // for writing output only
 
     public static void main(String[] args) throws IOException {
         for (String integrator : integrators) {
@@ -62,6 +60,7 @@ public class Main {
 
         // 👉 Inicialización de derivadas solo si es Gear5
         if (integrator instanceof Gear5Integrator) {
+            dt2=0.001;
             // primero calculo aceleración inicial con la fuerza
             fc.computeForces(arr);
             p.a.set(p.a); // redundante, pero deja claro que ya está calculada

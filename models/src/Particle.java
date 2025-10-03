@@ -9,11 +9,22 @@ public class Particle {
     // para Beeman
     public Vector a_prev = new Vector();
 
+    // para Verlet
+    public Vector r_prev; // posición en el paso anterior
+
     // para Gear predictor-corrector
     public Vector r2 = new Vector();
     public Vector r3 = new Vector();
     public Vector r4 = new Vector();
     public Vector r5 = new Vector();
+
+    public Vector r2_prev = new Vector();
+    public Vector r3_prev = new Vector();
+    public Vector r4_prev = new Vector();
+    public Vector r5_prev = new Vector();
+    public Vector v_prev = new Vector();
+
+
 
     public Particle(int id) {
         this.id = id;
