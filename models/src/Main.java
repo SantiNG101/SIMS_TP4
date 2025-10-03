@@ -6,23 +6,28 @@ import java.util.Random;
 public class Main {
 
     // Parameters
-    static String mode = "oscillator"; // "oscillator", "gravity" or "gravity_cumulus" (punto 4)
+    static String mode = "gravity"; // "oscillator", "gravity" or "gravity_cumulus" (punto 4)
     static String integrators[] = {"verlet", "beeman", "gear5"}; // "verlet", "beeman", "gear5"
-    static double dt[] = {0.1, 0.01, 0.001, 1E-04, 1E-05, 1E-06, 1E-07};
+    static double dt[] = {0.001};
     static double tf = 5.0;
-    static double dt2 = 0.0001; // for writing output only
+    static double dt2 = 0.01; // for writing output only
+
+    static int N[] = {200};
+    static int runs = 5;
 
     public static void main(String[] args) throws IOException {
-        for (String integrator : integrators) {
-            for (double deltaT : dt) {
-                if (mode.equalsIgnoreCase("oscillator")) {
-                    runOscillator(integrator, deltaT, dt2, tf);
-                } else if (mode.equalsIgnoreCase("gravity")) {
-                    runGravity(integrator, deltaT, tf);
-                } else if (mode.equalsIgnoreCase("gravity_cumulus")) {
-                    runGravityCumulus(integrator, deltaT, tf);
-                } else {
-                    throw new IllegalArgumentException("Unknown mode: " + mode);
+        for (int i = 0; i < runs; i++) {
+            for (String integrator : integrators) {
+                for (double deltaT : dt) {
+                    for (int n : N) {
+                        if (mode.equalsIgnoreCase("oscillator")) {
+                            runOscillator(integrator, deltaT, dt2, tf);
+                        } else if (mode.equalsIgnoreCase("gravity")) {
+                            runGravity(integrator, deltaT, tf, n, runs>1);
+                        } else {
+                            throw new IllegalArgumentException("Unknown mode: " + mode);
+                        }
+                    }
                 }
             }
         }
@@ -93,16 +98,19 @@ public class Main {
         System.out.println("Finished oscillator with " + integrator.name() + " -> " + out + ", " + eout);
     }
 
-    static void runGravity(String integratorName, double dt, double tf) throws IOException {
-        int N = 200;
-
-        String folder = "outputs/gravity/sim_results/"+integratorName+"/";
-        new File(folder).mkdirs();
-        String out = folder + "out.csv";
-        String eout = folder + "energy_dt"+ String.format("%.0e",dt) +".csv";
+    static void runGravity(String integratorName, double dt, double tf, int N, boolean multipleRuns) throws IOException {
+        String paramLabel = String.format("dt%.0eN%d",dt,N);
+        String folder = "outputs/gravity/sim_results/"+integratorName+"/"+(multipleRuns? paramLabel:"");
+        String outFolder = folder+"/out/";
+        String eoutFolder = folder+"/energy/";
+        new File(outFolder).mkdirs();
+        new File(eoutFolder).mkdirs();
+        Random rnd = new Random();
+        String out = outFolder + "out_" + ( multipleRuns? rnd.nextInt():paramLabel) + ".csv";
+        String eout = eoutFolder + "energy_"+ paramLabel +".csv";
 
         Particle[] arr = new Particle[N];
-        Random rnd = new Random(1);
+
         for (int i = 0; i < N; i++) {
             arr[i] = new Particle(i);
             arr[i].m = 1.0;
