@@ -8,7 +8,7 @@ import java.util.Timer;
 public class Main {
 
     // Parameters
-    static String mode = "gravity"; // "oscillator" or "gravity"
+    static String mode = "gravity"; // "oscillator", "gravity" or "gravity_cumulus" (punto 4)
     static String integrators[] = {"verlet"}; // "verlet", "beeman", "gear5"
     static double dt[] = {0.01};
     static double tf = 3.0;
@@ -21,6 +21,8 @@ public class Main {
                     runOscillator(integrator, deltaT, dt2, tf);
                 } else if (mode.equalsIgnoreCase("gravity")) {
                     runGravity(integrator, deltaT, tf);
+                } else if (mode.equalsIgnoreCase("gravity_cumulus")) {
+                    runGravityCumulus(integrator, deltaT, tf);
                 } else {
                     throw new IllegalArgumentException("Unknown mode: " + mode);
                 }
@@ -143,6 +145,64 @@ public class Main {
         sw.close();
         ew.close();
         System.out.println("Finished gravity with " + integrator.name() + " -> " + out + ", " + eout);
+        System.out.println("Execution time: " + (endTime - startTime));
+    }
+
+    static void runGravityCumulus(String integratorName, double dt, double tf) throws IOException {
+        int N1 = 100; // partículas por cúmulo
+        int N = 2 * N1; // total de partículas
+
+        double dx = 4.0; // separación en x
+        double dy = 0.5; // separación en y
+        double cumulus_v = 0.1;  // velocidad inicial de cada cúmulo
+
+        Random rnd = new Random(1);
+
+        Particle[] arr = new Particle[N];
+
+        String folder = "outputs/gravity/cumulus/" + integratorName + "/";
+        new File(folder).mkdirs();
+        String out = folder + "out.csv";
+
+        // Primer cúmulo
+        for (int i = 0; i < N1; i++) {
+            arr[i] = new Particle(i);
+            arr[i].m = 1.0;
+            arr[i].r.set(rnd.nextGaussian(), rnd.nextGaussian(), rnd.nextGaussian());
+            arr[i].v.set(cumulus_v, 0, 0); // va hacia la derecha
+        }
+
+        // Segundo cúmulo
+        for (int i = 0; i < N1; i++) {
+            arr[i + N1] = new Particle(i + N1);
+            arr[i + N1].m = 1.0;
+            arr[i + N1].r.set(rnd.nextGaussian() + dx, rnd.nextGaussian() + dy, rnd.nextGaussian());
+            arr[i + N1].v.set(-cumulus_v, 0, 0); // va hacia la izquierda
+        }
+
+        final double G = 1.0, h = 0.05;
+        ForceCalculator fc = new GravityForce(G, h);
+        Integrator integrator = buildIntegrator(integratorName);
+
+        StateWriter sw = new StateWriter(out);
+
+        double t = 0.0, t_write = 0.0;
+        tf += 1e-12;
+        dt2 -= 1e-12;
+        long startTime = System.currentTimeMillis();
+
+        while (t <= tf) {
+            if(t - t_write >= dt2) {
+                sw.write(t, arr);
+                t_write = t;
+            }
+            integrator.step(arr, dt, fc);
+            t += dt;
+        }
+
+        long endTime = System.currentTimeMillis();
+        sw.close();
+        System.out.println("Finished gravity with " + integrator.name() + " -> " + out);
         System.out.println("Execution time: " + (endTime - startTime));
     }
 }
