@@ -1,41 +1,87 @@
 public class BeemanIntegrator implements Integrator {
+
+    private boolean firstStep = true;
+
     @Override
     public void step(Particle[] p, double dt, ForceCalculator fc) {
         int n = p.length;
 
-        // Guardar aceleraciones actuales (a_n)
+        // **LA CORRECCIÓN CLAVE**: En el primer paso, nos aseguramos de que a(0) esté
+        // calculada a partir de r(0) y v(0) antes de hacer nada más.
+        if (firstStep) {
+            fc.computeForces(p);
+        }
+
+        // 1. Guardar estado actual: aceleraciones a(t) y velocidades v(t)
         Vector[] a_n = new Vector[n];
+        Vector[] v_n = new Vector[n];
         for (int i = 0; i < n; i++) {
             a_n[i] = new Vector(p[i].a.x, p[i].a.y, p[i].a.z);
+            v_n[i] = new Vector(p[i].v.x, p[i].v.y, p[i].v.z);
         }
 
-        // Predicción de posiciones
+        // 2. Inicialización de alta precisión en el primer paso
+        if (firstStep) {
+            for (int i = 0; i < n; i++) {
+                Particle pi = p[i];
+
+                Vector r_curr = new Vector(pi.r.x, pi.r.y, pi.r.z);
+                Vector v_curr = new Vector(pi.v.x, pi.v.y, pi.v.z);
+                Vector a_curr = a_n[i];
+
+                Vector r_prev_est = r_curr.sub(v_curr.mul(dt)).add(a_curr.mul(0.5 * dt * dt));
+                Vector v_prev_est = v_curr.sub(a_curr.mul(dt));
+
+                pi.r.set(r_prev_est);
+                pi.v.set(v_prev_est);
+
+                fc.computeForces(p);
+
+                pi.a_prev.set(pi.a);
+
+                pi.r.set(r_curr);
+                pi.v.set(v_curr);
+                pi.a.set(a_curr);
+            }
+            firstStep = false;
+        }
+
+        // --- PREDICCIÓN ---
         for (int i = 0; i < n; i++) {
             Particle pi = p[i];
-            Vector rnew = pi.r
-                    .add(pi.v.mul(dt))
-                    .add(pi.a.mul((2.0 / 3.0) * dt * dt))
+
+            Vector r_pred = pi.r
+                    .add(v_n[i].mul(dt))
+                    .add(a_n[i].mul((2.0 / 3.0) * dt * dt))
                     .sub(pi.a_prev.mul((1.0 / 6.0) * dt * dt));
-            pi.r.set(rnew);
+
+            Vector v_pred = v_n[i]
+                    .add(a_n[i].mul(1.5 * dt))
+                    .sub(pi.a_prev.mul(0.5 * dt));
+
+            pi.r.set(r_pred);
+            pi.v.set(v_pred);
         }
 
-        // Calcular aceleraciones en t+dt
+        // --- EVALUACIÓN DE FUERZAS ---
         fc.computeForces(p);
 
-        // Corrección de velocidades
+        // --- CORRECCIÓN ---
         for (int i = 0; i < n; i++) {
             Particle pi = p[i];
-            Vector a_next = new Vector(pi.a.x, pi.a.y, pi.a.z); // a_{n+1}
-            Vector a_curr = a_n[i]; // a_n
-            Vector a_prev = new Vector(pi.a_prev.x, pi.a_prev.y, pi.a_prev.z); // a_{n-1}
+            Vector a_next = pi.a;
 
-            Vector vnew = pi.v
-                    .add(a_next.mul(dt / 3.0))
-                    .add(a_curr.mul(5.0 * dt / 6.0))
-                    .sub(a_prev.mul(dt / 6.0));
+            Vector v_corrected = v_n[i]
+                    .add(a_next.mul((1.0 / 3.0) * dt))
+                    .add(a_n[i].mul((5.0 / 6.0) * dt))
+                    .sub(pi.a_prev.mul((1.0 / 6.0) * dt));
 
-            pi.v.set(vnew);
-            pi.a_prev.set(a_curr); // preparar para el siguiente paso
+            pi.v.set(v_corrected);
+        }
+
+        // --- ACTUALIZACIÓN ---
+        for (int i = 0; i < n; i++) {
+            p[i].a_prev.set(a_n[i]);
         }
     }
 
@@ -44,5 +90,7 @@ public class BeemanIntegrator implements Integrator {
         return "Beeman";
     }
 }
+
+
 
 
