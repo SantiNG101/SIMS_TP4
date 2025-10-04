@@ -37,7 +37,7 @@ def animate_cumulus(integratorName="verlet"):
         t = times[frame]
         data = df[df['time'] == t].sort_values('id')
         scat._offsets3d = (data['x'], data['y'], data['z'])
-        ax.set_title(f"t = {t:.2f}")
+        ax.set_title(f"t = {t:.2f} s")
         return scat,
 
     ani = FuncAnimation(fig, update, frames=len(times), interval=50, blit=False)
