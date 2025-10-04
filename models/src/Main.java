@@ -6,21 +6,30 @@ import java.util.Random;
 public class Main {
 
     // Parameters
-    static String mode = "oscillator"; // "oscillator" or "gravity"
+    static String mode = "gravity"; // "oscillator", "gravity" or "gravity_cumulus" (punto 4)
     static String integrators[] = {"verlet", "beeman", "gear5"}; // "verlet", "beeman", "gear5"
-    static double dt[] = {0.1, 0.01, 0.001, 1E-04, 1E-05, 1E-06, 1E-07};
+    static double dt[] = {0.001};
     static double tf = 5.0;
-    static double dt2 = 0.0001; // for writing output only
+    static double dt2 = 0.01; // for writing output only
+
+    static int N[] = {200};
+    static int runs = 5;
 
     public static void main(String[] args) throws IOException {
-        for (String integrator : integrators) {
-            for (double deltaT : dt) {
-                if (mode.equalsIgnoreCase("oscillator")) {
-                    runOscillator(integrator, deltaT, dt2, tf);
-                } else if (mode.equalsIgnoreCase("gravity")) {
-                    runGravity(integrator, deltaT, tf);
-                } else {
-                    throw new IllegalArgumentException("Unknown mode: " + mode);
+        for (int i = 0; i < runs; i++) {
+            for (String integrator : integrators) {
+                for (double deltaT : dt) {
+                    for (int n : N) {
+                        if (mode.equalsIgnoreCase("oscillator")) {
+                            runOscillator(integrator, deltaT, dt2, tf);
+                        } else if (mode.equalsIgnoreCase("gravity")) {
+                            runGravity(integrator, deltaT, tf, n, runs>1);
+                        } else if (mode.equalsIgnoreCase("gravity_cumulus")) {
+                            runGravityCumulus(integrator, deltaT, tf);
+                        } else {
+                            throw new IllegalArgumentException("Unknown mode: " + mode);
+                        }
+                    }
                 }
             }
         }
@@ -69,7 +78,6 @@ public class Main {
         }
 
         StateWriter sw = new StateWriter(out);
-        EnergyWriter ew = new EnergyWriter(eout, "E_kin,E_pot,E_tot");
 
         double t = 0.0;
         double t_write = 0.0;
@@ -77,9 +85,6 @@ public class Main {
         while (t <= tf + 1e-12) {
             if (t - t_write >= dt2 - 1e-12) {
                 sw.write(t, arr);
-                double ek = Energy.kinetic(arr);
-                double ep = Energy.potentialOscillator(p, k);
-                ew.write(t, ek, ep, ek + ep);
                 t_write = t;
             }
             integrator.step(arr, dt, fc);
@@ -87,20 +92,19 @@ public class Main {
         }
 
         sw.close();
-        ew.close();
         System.out.println("Finished oscillator with " + integrator.name() + " -> " + out + ", " + eout);
     }
 
-    static void runGravity(String integratorName, double dt, double tf) throws IOException {
-        int N = 200;
-
-        String folder = "outputs/gravity/sim_results/"+integratorName+"/";
-        new File(folder).mkdirs();
-        String out = folder + "out.csv";
-        String eout = folder + "energy_dt"+ String.format("%.0e",dt) +".csv";
+    static void runGravity(String integratorName, double dt, double tf, int N, boolean multipleRuns) throws IOException {
+        String paramLabel = String.format("dt%.0eN%d",dt,N);
+        String folder = "outputs/gravity/sim_results/"+integratorName+"/"+(multipleRuns? paramLabel:"");
+        String outFolder = folder+"/out/";
+        new File(outFolder).mkdirs();
+        Random rnd = new Random();
+        String out = outFolder + "out_" + ( multipleRuns? rnd.nextInt():paramLabel) + ".csv";
 
         Particle[] arr = new Particle[N];
-        Random rnd = new Random(1);
+
         for (int i = 0; i < N; i++) {
             arr[i] = new Particle(i);
             arr[i].m = 1.0;
@@ -119,7 +123,6 @@ public class Main {
         Integrator integrator = buildIntegrator(integratorName);
 
         StateWriter sw = new StateWriter(out);
-        EnergyWriter ew = new EnergyWriter(eout, "E_kin,E_pot,E_tot");
 
         double t = 0.0, t_write = 0.0;
         tf += 1e-12;
@@ -129,9 +132,6 @@ public class Main {
         while (t <= tf) {
             if(t - t_write >= dt2) {
                 sw.write(t, arr);
-                double ek = Energy.kinetic(arr);
-                double ep = Energy.potentialGravity(arr, G, h);
-                ew.write(t, ek, ep, ek + ep);
                 t_write = t;
             }
             integrator.step(arr, dt, fc);
@@ -140,8 +140,65 @@ public class Main {
 
         long endTime = System.currentTimeMillis();
         sw.close();
-        ew.close();
-        System.out.println("Finished gravity with " + integrator.name() + " -> " + out + ", " + eout);
+        System.out.println("Finished gravity with " + integrator.name() + " -> " + out);
+        System.out.println("Execution time: " + (endTime - startTime));
+    }
+
+    static void runGravityCumulus(String integratorName, double dt, double tf) throws IOException {
+        int N1 = 100; // partículas por cúmulo
+        int N = 2 * N1; // total de partículas
+
+        double dx = 4.0; // separación en x
+        double dy = 0.5; // separación en y
+        double cumulus_v = 0.1;  // velocidad inicial de cada cúmulo
+
+        Random rnd = new Random(1);
+
+        Particle[] arr = new Particle[N];
+
+        String folder = "outputs/gravity/cumulus/" + integratorName + "/";
+        new File(folder).mkdirs();
+        String out = folder + "out.csv";
+
+        // Primer cúmulo
+        for (int i = 0; i < N1; i++) {
+            arr[i] = new Particle(i);
+            arr[i].m = 1.0;
+            arr[i].r.set(rnd.nextGaussian(), rnd.nextGaussian(), rnd.nextGaussian());
+            arr[i].v.set(cumulus_v, 0, 0); // va hacia la derecha
+        }
+
+        // Segundo cúmulo
+        for (int i = 0; i < N1; i++) {
+            arr[i + N1] = new Particle(i + N1);
+            arr[i + N1].m = 1.0;
+            arr[i + N1].r.set(rnd.nextGaussian() + dx, rnd.nextGaussian() + dy, rnd.nextGaussian());
+            arr[i + N1].v.set(-cumulus_v, 0, 0); // va hacia la izquierda
+        }
+
+        final double G = 1.0, h = 0.05;
+        ForceCalculator fc = new GravityForce(G, h);
+        Integrator integrator = buildIntegrator(integratorName);
+
+        StateWriter sw = new StateWriter(out);
+
+        double t = 0.0, t_write = 0.0;
+        tf += 1e-12;
+        dt2 -= 1e-12;
+        long startTime = System.currentTimeMillis();
+
+        while (t <= tf) {
+            if(t - t_write >= dt2) {
+                sw.write(t, arr);
+                t_write = t;
+            }
+            integrator.step(arr, dt, fc);
+            t += dt;
+        }
+
+        long endTime = System.currentTimeMillis();
+        sw.close();
+        System.out.println("Finished gravity with " + integrator.name() + " -> " + out);
         System.out.println("Execution time: " + (endTime - startTime));
     }
 }
