@@ -6,11 +6,11 @@ import java.util.Random;
 public class Main {
 
     // Parameters
-    static String mode = "gravity"; // "oscillator", "gravity" or "gravity_cumulus" (punto 4)
+    static String mode = "oscillator"; // "oscillator", "gravity" or "gravity_cumulus" (punto 4)
     static String integrators[] = {"verlet", "beeman", "gear5"}; // "verlet", "beeman", "gear5"
-    static double dt[] = {0.001};
+    static double dt[] = {0.01, 0.001, 1E-04, 1E-05, 1E-06, 1E-07};
     static double tf = 5.0;
-    static double dt2 = 0.01; // for writing output only
+    static double dt2 = 0.0001; // for writing output only
 
     static int N[] = {200};
     static int runs = 5;
@@ -24,6 +24,8 @@ public class Main {
                             runOscillator(integrator, deltaT, dt2, tf);
                         } else if (mode.equalsIgnoreCase("gravity")) {
                             runGravity(integrator, deltaT, tf, n, runs>1);
+                        } else if (mode.equalsIgnoreCase("gravity_cumulus")) {
+                            runGravityCumulus(integrator, deltaT, tf);
                         } else {
                             throw new IllegalArgumentException("Unknown mode: " + mode);
                         }
@@ -67,7 +69,6 @@ public class Main {
 
         // 👉 Inicialización de derivadas solo si es Gear5
         if (integrator instanceof Gear5Integrator) {
-            dt2=0.001;
             // primero calculo aceleración inicial con la fuerza
             fc.computeForces(arr);
             p.a.set(p.a); // redundante, pero deja claro que ya está calculada
@@ -76,7 +77,6 @@ public class Main {
         }
 
         StateWriter sw = new StateWriter(out);
-        EnergyWriter ew = new EnergyWriter(eout, "E_kin,E_pot,E_tot");
 
         double t = 0.0;
         double t_write = 0.0;
@@ -84,9 +84,6 @@ public class Main {
         while (t <= tf + 1e-12) {
             if (t - t_write >= dt2 - 1e-12) {
                 sw.write(t, arr);
-                double ek = Energy.kinetic(arr);
-                double ep = Energy.potentialOscillator(p, k);
-                ew.write(t, ek, ep, ek + ep);
                 t_write = t;
             }
             integrator.step(arr, dt, fc);
@@ -94,7 +91,6 @@ public class Main {
         }
 
         sw.close();
-        ew.close();
         System.out.println("Finished oscillator with " + integrator.name() + " -> " + out + ", " + eout);
     }
 
@@ -102,12 +98,9 @@ public class Main {
         String paramLabel = String.format("dt%.0eN%d",dt,N);
         String folder = "outputs/gravity/sim_results/"+integratorName+"/"+(multipleRuns? paramLabel:"");
         String outFolder = folder+"/out/";
-        String eoutFolder = folder+"/energy/";
         new File(outFolder).mkdirs();
-        new File(eoutFolder).mkdirs();
         Random rnd = new Random();
         String out = outFolder + "out_" + ( multipleRuns? rnd.nextInt():paramLabel) + ".csv";
-        String eout = eoutFolder + "energy_"+ paramLabel +".csv";
 
         Particle[] arr = new Particle[N];
 
@@ -129,7 +122,6 @@ public class Main {
         Integrator integrator = buildIntegrator(integratorName);
 
         StateWriter sw = new StateWriter(out);
-        EnergyWriter ew = new EnergyWriter(eout, "E_kin,E_pot,E_tot");
 
         double t = 0.0, t_write = 0.0;
         tf += 1e-12;
@@ -139,9 +131,6 @@ public class Main {
         while (t <= tf) {
             if(t - t_write >= dt2) {
                 sw.write(t, arr);
-                double ek = Energy.kinetic(arr);
-                double ep = Energy.potentialGravity(arr, G, h);
-                ew.write(t, ek, ep, ek + ep);
                 t_write = t;
             }
             integrator.step(arr, dt, fc);
@@ -150,8 +139,7 @@ public class Main {
 
         long endTime = System.currentTimeMillis();
         sw.close();
-        ew.close();
-        System.out.println("Finished gravity with " + integrator.name() + " -> " + out + ", " + eout);
+        System.out.println("Finished gravity with " + integrator.name() + " -> " + out);
         System.out.println("Execution time: " + (endTime - startTime));
     }
 

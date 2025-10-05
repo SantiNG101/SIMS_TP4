@@ -64,19 +64,20 @@ def load_energy_data(filename):
     return time, E_kin, E_pot, E_tot
 
 
-def plot_energies(time, E_kin, E_pot, E_tot, dt, integrator):
+def plot_energies(time, E_kin, E_pot, E_tot, dt, integrator, fontsize):
     """Genera y guarda el gráfico de energías."""
 
     plt.figure(figsize=(10, 6))
 
-    plt.plot(time, E_kin, linestyle="--", color="tab:blue", label="E_cinética")
-    plt.plot(time, E_pot, linestyle="--", color="tab:orange", label="E_potencial")
-    plt.plot(time, E_tot, linestyle="-", color="tab:red", label="E_total")
+    plt.plot(time, E_kin, linestyle="--", color="tab:blue", label="Energía cinética")
+    plt.plot(time, E_pot, linestyle="--", color="tab:orange", label="Energía potencial")
+    plt.plot(time, E_tot, linestyle="-", color="tab:red", label="Energía total")
 
-    plt.xlabel("Tiempo")
-    plt.ylabel("Energía")
-    plt.title(f"Conservación de la Energía (Integrador: {integrator.capitalize()}, $\\Delta t$ = {dt})")
-    plt.legend()
+    plt.xlabel("Tiempo (s)", fontsize=fontsize)
+    plt.ylabel("Energía (J)", fontsize=fontsize)
+    plt.legend(fontsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
 
     # Dibujamos una línea horizontal de la energía total promedio
     E_tot_avg = np.mean(E_tot)
@@ -85,40 +86,51 @@ def plot_energies(time, E_kin, E_pot, E_tot, dt, integrator):
     plt.grid(True, linestyle=":")
 
     # Guardamos el archivo en el directorio actual
-    plot_filename = f"energies_{integrator}_dt{dt:.0e}.png"
+    plot_filename = f"outputs/gravity/energy_{integrator}_dt{dt}.png"
     plt.savefig(plot_filename, dpi=150, bbox_inches="tight")
 
 
 if __name__ == "__main__":
 
-    # --- CÁLCULO Y GUARDADO DE ENERGÍAS ---
-    df_out = pd.read_csv('../../outputs/gravity/sim_results/gear5/out.csv')
-    df_out['m'] = 1.0  # Asumiendo m=1.0 para todas las partículas
-    energy_filename = 'calculated_energy.csv'
-    energy_data = []
+    # ---------------------------------------------------------------------------------------------------------------
+    
+    # PARÁMETROS DE SIMULACIÓN (ajustar según sea necesario)
+    integrator = "verlet"
+    dt_list = ["1e-05"]
+    N = 200 
+    fontsize = 15
 
-    for time_step, group in df_out.groupby('time'):
-        ek = calculate_kinetic_energy(group)
-        ep = calculate_potential_energy(group, G, h)
-        et = ek + ep
-        energy_data.append([time_step, ek, ep, et])
+    # ---------------------------------------------------------------------------------------------------------------
+    
+    for dt in dt_list:
+        sim_dir = f'outputs/gravity/sim_results/{integrator}/dt{dt}N{N}'
+        out_dir = os.path.join(sim_dir, 'out')
 
-    energy_df = pd.DataFrame(energy_data, columns=['Time', 'E_kin', 'E_pot', 'E_tot'])
-    energy_df.to_csv(energy_filename, index=False)
+        # agarro el primer archivo CSV de la carpeta out
+        files = os.listdir(out_dir)
+        first_file = sorted(files)[0]
 
-    # --- PLOTEO ---
-    # Usamos los parámetros del ejemplo de ploteo del usuario
-    dt_sim = 1e-3
-    integrator_sim = "gear5"
+        file_path = os.path.join(out_dir, first_file)
 
-    # Cargamos el archivo que acabamos de generar
-    time, E_kin, E_pot, E_tot = load_energy_data(energy_filename)
+        # leer CSV
+        df_out = pd.read_csv(file_path)
+        df_out['m'] = 1.0  # Asumiendo m=1.0 para todas las partículas
+        energy_filename = sim_dir + f"/energy.csv"
+        energy_data = []
 
-    # Generamos el gráfico
-    plot_energies(time, E_kin, E_pot, E_tot, dt_sim, integrator_sim)
+        for time_step, group in df_out.groupby('time'):
+            ek = calculate_kinetic_energy(group)
+            ep = calculate_potential_energy(group, G, h)
+            et = ek + ep
+            energy_data.append([time_step, ek, ep, et])
 
-    # Imprimir la variación de energía total para el análisis
-    E_tot_initial = E_tot[0]
-    E_tot_max = np.max(E_tot)
-    E_tot_min = np.min(E_tot)
-    delta_E_max = (E_tot_max - E_tot_min) / np.abs(E_tot_initial)
+        energy_df = pd.DataFrame(energy_data, columns=['Time', 'E_kin', 'E_pot', 'E_tot'])
+        energy_df.to_csv(energy_filename, index=False)
+
+        # --- PLOTEO ---
+
+        # Cargamos el archivo que acabamos de generar
+        time, E_kin, E_pot, E_tot = load_energy_data(energy_filename)
+
+        # Generamos el gráfico
+        plot_energies(time, E_kin, E_pot, E_tot, dt, integrator, fontsize)
