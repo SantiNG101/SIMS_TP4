@@ -101,7 +101,7 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
             file_list, t_transient=t_transient
         )
         
-        # Guardar datos para segunda pasada
+        # Guardo datos para segunda pasada
         all_data.append({
             'N': N,
             'times': times,
@@ -116,12 +116,12 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
             'file_list': file_list
         })
         
-        # Actualizar máximo valor de r_hm
+        # Actualizo máximo valor de r_hm
         current_max = np.max(mean_full + std_full)
         if current_max > max_rhm:
             max_rhm = current_max
     
-    # Añadir un margen del 10% para mejor visualización
+    # Añadi un margen del 10% para q se vea mejor
     y_max = max_rhm * 1.1
     
     # SEGUNDA PASADA: generar gráficos con escala común
@@ -150,7 +150,7 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
         t_line = np.array([times_stat[0], times_stat[-1]])
         plt.plot(t_line, intercept_mean + slope*t_line, 'r--', label=f"slope={slope:.2e}")
         
-        # Establecer escala común en Y
+        # Estableci escala común en Y
         plt.ylim(0, y_max)
         
         plt.xlabel("dt (s)")
@@ -176,7 +176,7 @@ def analyze_all_N(N_values, dt, t_transient, frac_tail_for_slope):
 if __name__ == "__main__":
     N_values = [100, 200, 500, 1000, 1500, 2000]
     dt = 1e-3
-    t_transient = 0.4
+    t_transient = 0.5
     frac_tail_for_slope = t_transient #0.5
 
     Ns, slopes = analyze_all_N(N_values, dt=dt, t_transient=t_transient, frac_tail_for_slope=frac_tail_for_slope)
