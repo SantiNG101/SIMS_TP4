@@ -11,10 +11,10 @@ public class StateWriter {
     }
 
     public void write(double t, Particle[] particles) {
-        for (Particle p : particles) {
-            out.printf(Locale.US, "%.6g,%d,%.6g,%.6g,%.6g,%.6g,%.6g,%.6g\n", t, p.id,
-                    p.r.x, p.r.y, p.r.z, p.v.x, p.v.y, p.v.z);
-        }
+            for (Particle p : particles) {
+                out.printf(Locale.US, "%s,%d,%s,%s,%s,%s,%s,%s\n", t, p.id,
+                        p.r.x, p.r.y, p.r.z, p.v.x, p.v.y, p.v.z);
+            }
     }
 
     public void close() {
